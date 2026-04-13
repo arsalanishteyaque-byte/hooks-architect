@@ -1,0 +1,707 @@
+import { useState, useEffect } from "react";
+
+const FREE_LIMIT = 3;
+
+const PAYWALL_PLANS = [
+  { label: "Starter", price: "₹199", period: "/month", hooks: "50 hooks/mo", color: "#f97316" },
+  { label: "Pro", price: "₹399", period: "/month", hooks: "Unlimited", color: "#f59e0b", badge: "POPULAR" },
+];
+
+const styleTag = `
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body { background: #0a0a0a; }
+
+  .app {
+    min-height: 100vh;
+    background: #0a0a0a;
+    font-family: 'DM Sans', sans-serif;
+    color: #f1f1f1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .bg-glow {
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 700px;
+    height: 400px;
+    background: radial-gradient(ellipse, rgba(249,115,22,0.12) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(249,115,22,0.12);
+    border: 1px solid rgba(249,115,22,0.3);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #f97316;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    background: #f97316;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 6vw, 48px);
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 10px;
+    color: #fff;
+  }
+
+  h1 span {
+    background: linear-gradient(90deg, #f97316, #f59e0b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .subtitle {
+    color: #888;
+    font-size: 15px;
+    margin-bottom: 36px;
+    line-height: 1.6;
+  }
+
+  .credits-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 24px;
+    font-size: 13px;
+  }
+
+  .credits-label { color: #888; }
+
+  .credits-dots {
+    display: flex;
+    gap: 6px;
+  }
+
+  .credit-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    transition: background 0.3s;
+  }
+
+  .credit-dot.used { background: rgba(255,255,255,0.12); }
+  .credit-dot.left { background: #f97316; }
+
+  .form-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+
+  .field {
+    margin-bottom: 18px;
+  }
+
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #888;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: #f1f1f1;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: none;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: rgba(249,115,22,0.5);
+  }
+
+  input::placeholder, textarea::placeholder { color: #555; }
+
+  select option { background: #1a1a1a; }
+
+  .generate-btn {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(135deg, #f97316, #f59e0b);
+    border: none;
+    border-radius: 12px;
+    color: #000;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    letter-spacing: 0.02em;
+  }
+
+  .generate-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+  .generate-btn:active:not(:disabled) { transform: translateY(0); }
+  .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .results {
+    animation: fadeIn 0.4s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .results-header {
+    font-size: 12px;
+    font-weight: 600;
+    color: #f97316;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .hook-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    transition: border-color 0.2s, background 0.2s;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .hook-card:hover {
+    border-color: rgba(249,115,22,0.3);
+    background: rgba(249,115,22,0.04);
+  }
+
+  .hook-number {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    background: rgba(249,115,22,0.15);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #f97316;
+  }
+
+  .hook-text {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #e0e0e0;
+    flex: 1;
+  }
+
+  .copy-btn {
+    background: none;
+    border: none;
+    color: #555;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px;
+    transition: color 0.2s;
+    min-width: 20px;
+  }
+
+  .copy-btn:hover { color: #f97316; }
+
+  .copy-toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a1a1a;
+    border: 1px solid rgba(249,115,22,0.4);
+    color: #f97316;
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 100;
+    animation: toastIn 0.3s ease;
+  }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translate(-50%, 10px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+  }
+
+  .loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 40px 20px;
+    color: #888;
+    font-size: 14px;
+  }
+
+  .spinner {
+    width: 32px;
+    height: 32px;
+    border: 2px solid rgba(249,115,22,0.2);
+    border-top-color: #f97316;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* PAYWALL */
+  .paywall-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(10px);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .paywall-card {
+    background: #111;
+    border: 1px solid rgba(249,115,22,0.25);
+    border-radius: 24px;
+    padding: 36px 28px;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .paywall-icon {
+    font-size: 40px;
+    margin-bottom: 16px;
+  }
+
+  .paywall-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    color: #fff;
+  }
+
+  .paywall-sub {
+    color: #888;
+    font-size: 14px;
+    margin-bottom: 28px;
+    line-height: 1.6;
+  }
+
+  .plan-cards {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .plan {
+    flex: 1;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 18px 14px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+  }
+
+  .plan:hover {
+    border-color: rgba(249,115,22,0.4);
+    background: rgba(249,115,22,0.04);
+  }
+
+  .plan.selected {
+    border-color: #f97316;
+    background: rgba(249,115,22,0.06);
+  }
+
+  .plan-badge {
+    position: absolute;
+    top: -9px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(90deg, #f97316, #f59e0b);
+    color: #000;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+
+  .plan-label {
+    font-size: 12px;
+    color: #888;
+    font-weight: 600;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .plan-price {
+    font-family: 'Syne', sans-serif;
+    font-size: 24px;
+    font-weight: 800;
+    color: #fff;
+  }
+
+  .plan-period { font-size: 12px; color: #666; }
+
+  .plan-hooks {
+    font-size: 12px;
+    color: #f97316;
+    margin-top: 6px;
+    font-weight: 500;
+  }
+
+  .upgrade-btn {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(135deg, #f97316, #f59e0b);
+    border: none;
+    border-radius: 12px;
+    color: #000;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-bottom: 12px;
+  }
+
+  .upgrade-btn:hover { opacity: 0.9; }
+
+  .skip-btn {
+    background: none;
+    border: none;
+    color: #555;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    text-decoration: underline;
+  }
+
+  .skip-btn:hover { color: #888; }
+
+  .error-msg {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: #f87171;
+    font-size: 13px;
+    margin-top: 12px;
+  }
+`;
+
+function PaywallModal({ onClose, selectedPlan, setSelectedPlan }) {
+  return (
+    <div className="paywall-overlay">
+      <div className="paywall-card">
+        <div className="paywall-icon">🔥</div>
+        <h2 className="paywall-title">You're on fire!</h2>
+        <p className="paywall-sub">
+          You've used your 3 free hooks. Upgrade <strong style={{color:"#f97316"}}>Hooks Architect</strong> to keep generating unlimited scroll-stopping ad hooks for all your campaigns.
+        </p>
+        <div className="plan-cards">
+          {PAYWALL_PLANS.map((plan) => (
+            <div
+              key={plan.label}
+              className={`plan ${selectedPlan === plan.label ? "selected" : ""}`}
+              onClick={() => setSelectedPlan(plan.label)}
+            >
+              {plan.badge && <div className="plan-badge">{plan.badge}</div>}
+              <div className="plan-label">{plan.label}</div>
+              <div className="plan-price">{plan.price}<span className="plan-period">{plan.period}</span></div>
+              <div className="plan-hooks">{plan.hooks}</div>
+            </div>
+          ))}
+        </div>
+        <button className="upgrade-btn">
+          Unlock {selectedPlan} — {PAYWALL_PLANS.find(p => p.label === selectedPlan)?.price}/mo
+        </button>
+        <button className="skip-btn" onClick={onClose}>Maybe later</button>
+      </div>
+    </div>
+  );
+}
+
+export default function AdHookGenerator() {
+  const [product, setProduct] = useState("");
+  const [audience, setAudience] = useState("");
+  const [platform, setPlatform] = useState("Meta Ads");
+  const [tone, setTone] = useState("Curiosity");
+  const [hooks, setHooks] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [usedCount, setUsedCount] = useState(0);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState("Pro");
+  const [toast, setToast] = useState("");
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(""), 2000);
+  };
+
+  const copyHook = (text) => {
+    navigator.clipboard.writeText(text).then(() => showToast("Copied!"));
+  };
+
+  const generate = async () => {
+    if (usedCount >= FREE_LIMIT) {
+      setShowPaywall(true);
+      return;
+    }
+    if (!product.trim() || !audience.trim()) {
+      setError("Please fill in your product and target audience.");
+      return;
+    }
+    setError("");
+    setLoading(true);
+    setHooks([]);
+
+    const prompt = `You are an expert Meta Ads copywriter specializing in scroll-stopping ad hooks.
+
+Generate 5 powerful ad hooks for the following:
+- Product/Service: ${product}
+- Target Audience: ${audience}
+- Platform: ${platform}
+- Tone/Angle: ${tone}
+
+Rules:
+- Each hook must be 1-2 sentences max
+- Make them highly specific, emotionally charged, and curiosity-driven
+- Avoid generic phrases like "Are you tired of..." — be creative and bold
+- Each hook should use a different psychological trigger (fear, desire, curiosity, social proof, urgency)
+
+Return ONLY a JSON array of 5 strings. No explanation, no markdown, no preamble. Just the array.
+Example: ["Hook 1", "Hook 2", "Hook 3", "Hook 4", "Hook 5"]`;
+
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+
+      const data = await response.json();
+      const text = data.content?.map(i => i.text || "").join("") || "";
+      const clean = text.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+
+      setHooks(parsed);
+      const newCount = usedCount + 1;
+      setUsedCount(newCount);
+      if (newCount >= FREE_LIMIT) {
+        setTimeout(() => setShowPaywall(true), 1200);
+      }
+    } catch (err) {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const creditsLeft = FREE_LIMIT - usedCount;
+
+  return (
+    <>
+      <style>{styleTag}</style>
+      <div className="app">
+        <div className="bg-glow" />
+        <div className="container">
+          {/* Brand Header */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "32px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div style={{
+                width: "36px", height: "36px", borderRadius: "10px",
+                background: "linear-gradient(135deg, #f97316, #f59e0b)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "18px", fontWeight: "800", color: "#000",
+                fontFamily: "'Syne', sans-serif"
+              }}>H</div>
+              <div>
+                <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: "800", fontSize: "15px", color: "#fff", lineHeight: 1.1 }}>Hooks Architect</div>
+                <div style={{ fontSize: "10px", color: "#f97316", fontWeight: "600", letterSpacing: "0.08em", textTransform: "uppercase" }}>Made for Marketing</div>
+              </div>
+            </div>
+            <div className="badge" style={{ margin: 0 }}>
+              <div className="dot" />
+              AI-Powered
+            </div>
+          </div>
+
+          <h1>Ad <span>Hook</span><br />Generator</h1>
+          <p className="subtitle">Generate scroll-stopping first lines for your Meta, Instagram & Google ads in seconds.</p>
+
+          {/* Credits bar */}
+          <div className="credits-bar">
+            <span className="credits-label">Free credits remaining</span>
+            <div className="credits-dots">
+              {Array.from({ length: FREE_LIMIT }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`credit-dot ${i < usedCount ? "used" : "left"}`}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Form */}
+          <div className="form-card">
+            <div className="field">
+              <label>Product / Service</label>
+              <input
+                type="text"
+                placeholder="e.g. Ayurvedic weight loss supplement"
+                value={product}
+                onChange={e => setProduct(e.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label>Target Audience</label>
+              <input
+                type="text"
+                placeholder="e.g. Women 25-45 struggling with belly fat"
+                value={audience}
+                onChange={e => setAudience(e.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label>Platform</label>
+              <select value={platform} onChange={e => setPlatform(e.target.value)}>
+                <option>Meta Ads</option>
+                <option>Instagram Reels</option>
+                <option>Google Ads</option>
+                <option>YouTube Ads</option>
+              </select>
+            </div>
+            <div className="field">
+              <label>Hook Angle</label>
+              <select value={tone} onChange={e => setTone(e.target.value)}>
+                <option>Curiosity</option>
+                <option>Fear / Pain Point</option>
+                <option>Desire / Dream Outcome</option>
+                <option>Social Proof</option>
+                <option>Shock / Controversy</option>
+                <option>Urgency / Scarcity</option>
+              </select>
+            </div>
+
+            <button
+              className="generate-btn"
+              onClick={generate}
+              disabled={loading}
+            >
+              {loading ? "Generating..." : usedCount >= FREE_LIMIT ? "🔒 Unlock to Generate" : "⚡ Generate Hooks"}
+            </button>
+
+            {error && <div className="error-msg">{error}</div>}
+          </div>
+
+          {/* Results */}
+          {loading && (
+            <div className="loading">
+              <div className="spinner" />
+              Writing your hooks...
+            </div>
+          )}
+
+          {hooks.length > 0 && !loading && (
+            <div className="results">
+              <div className="results-header">✦ Your hooks are ready</div>
+              {hooks.map((hook, i) => (
+                <div key={i} className="hook-card" onClick={() => copyHook(hook)}>
+                  <div className="hook-number">{i + 1}</div>
+                  <div className="hook-text">{hook}</div>
+                  <button className="copy-btn" title="Copy">⧉</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          textAlign: "center", padding: "20px", fontSize: "12px",
+          color: "#444", borderTop: "1px solid rgba(255,255,255,0.05)",
+          marginTop: "20px"
+        }}>
+          Made with ⚡ by <span style={{ color: "#f97316", fontWeight: "600" }}>Hooks Architect</span> · Made for Marketing
+        </div>
+
+        {/* Paywall */}
+        {showPaywall && (
+          <PaywallModal
+            onClose={() => setShowPaywall(false)}
+            selectedPlan={selectedPlan}
+            setSelectedPlan={setSelectedPlan}
+          />
+        )}
+
+        {/* Toast */}
+        {toast && <div className="copy-toast">{toast}</div>}
+      </div>
+    </>
+  );
+}
