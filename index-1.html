@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hooks Architect – Made for Marketing</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0a0a0a; font-family: 'DM Sans', sans-serif; color: #f1f1f1; }
+    .app { min-height: 100vh; background: #0a0a0a; position: relative; overflow: hidden; }
+    .bg-glow { position: fixed; top: -200px; left: 50%; transform: translateX(-50%); width: 700px; height: 400px; background: radial-gradient(ellipse, rgba(249,115,22,0.12) 0%, transparent 70%); pointer-events: none; z-index: 0; }
+    .container { max-width: 640px; margin: 0 auto; padding: 40px 20px 80px; position: relative; z-index: 1; }
+    .brand-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+    .brand-left { display: flex; align-items: center; gap: 10px; }
+    .brand-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #f97316, #f59e0b); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: #000; font-family: 'Syne', sans-serif; }
+    .brand-name { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 15px; color: #fff; line-height: 1.1; }
+    .brand-tag { font-size: 10px; color: #f97316; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(249,115,22,0.12); border: 1px solid rgba(249,115,22,0.3); border-radius: 20px; padding: 5px 12px; font-size: 11px; font-weight: 600; color: #f97316; letter-spacing: 0.08em; text-transform: uppercase; }
+    .dot { width: 6px; height: 6px; background: #f97316; border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+    h1 { font-family: 'Syne', sans-serif; font-size: clamp(32px,6vw,48px); font-weight: 800; line-height: 1.1; margin-bottom: 10px; color: #fff; }
+    .grad { background: linear-gradient(90deg,#f97316,#f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .subtitle { color: #888; font-size: 15px; margin-bottom: 36px; line-height: 1.6; }
+    .credits-bar { display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px 16px; margin-bottom: 24px; font-size: 13px; }
+    .credits-label { color: #888; }
+    .credits-dots { display: flex; gap: 6px; }
+    .credit-dot { width: 10px; height: 10px; border-radius: 50%; transition: background 0.3s; }
+    .credit-dot.used { background: rgba(255,255,255,0.12); }
+    .credit-dot.left { background: #f97316; }
+    .form-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 28px; margin-bottom: 24px; }
+    .field { margin-bottom: 18px; }
+    label { display: block; font-size: 12px; font-weight: 600; color: #888; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; }
+    input, select { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 12px 14px; color: #f1f1f1; font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s; }
+    input:focus, select:focus { border-color: rgba(249,115,22,0.5); }
+    input::placeholder { color: #555; }
+    select option { background: #1a1a1a; }
+    .generate-btn { width: 100%; padding: 15px; background: linear-gradient(135deg,#f97316,#f59e0b); border: none; border-radius: 12px; color: #000; font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity 0.2s, transform 0.1s; letter-spacing: 0.02em; }
+    .generate-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+    .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .results { animation: fadeIn 0.4s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+    .results-header { font-size: 12px; font-weight: 600; color: #f97316; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 14px; }
+    .hook-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 18px 20px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 14px; transition: border-color 0.2s, background 0.2s; cursor: pointer; }
+    .hook-card:hover { border-color: rgba(249,115,22,0.3); background: rgba(249,115,22,0.04); }
+    .hook-number { width: 26px; height: 26px; min-width: 26px; background: rgba(249,115,22,0.15); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #f97316; }
+    .hook-text { font-size: 14px; line-height: 1.6; color: #e0e0e0; flex: 1; }
+    .copy-icon { color: #555; font-size: 14px; padding-top: 2px; }
+    .loading { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 40px 20px; color: #888; font-size: 14px; }
+    .spinner { width: 32px; height: 32px; border: 2px solid rgba(249,115,22,0.2); border-top-color: #f97316; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    .error-msg { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; padding: 12px 16px; color: #f87171; font-size: 13px; margin-top: 12px; }
+    .footer { text-align: center; padding: 20px; font-size: 12px; color: #444; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 20px; }
+    .footer span { color: #f97316; font-weight: 600; }
+
+    /* API KEY SETUP */
+    .setup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(10px); z-index: 60; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .setup-card { background: #111; border: 1px solid rgba(249,115,22,0.25); border-radius: 24px; padding: 36px 28px; max-width: 420px; width: 100%; }
+    .setup-icon { font-size: 36px; margin-bottom: 16px; }
+    .setup-title { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; margin-bottom: 8px; color: #fff; }
+    .setup-sub { color: #888; font-size: 13px; margin-bottom: 24px; line-height: 1.6; }
+    .setup-btn { width: 100%; padding: 14px; background: linear-gradient(135deg,#f97316,#f59e0b); border: none; border-radius: 12px; color: #000; font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 12px; }
+    .setup-link { font-size: 12px; color: #f97316; text-decoration: none; }
+
+    /* PAYWALL */
+    .paywall-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.3s ease; }
+    .paywall-card { background: #111; border: 1px solid rgba(249,115,22,0.25); border-radius: 24px; padding: 36px 28px; max-width: 420px; width: 100%; text-align: center; }
+    .paywall-icon { font-size: 40px; margin-bottom: 16px; }
+    .paywall-title { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; margin-bottom: 8px; color: #fff; }
+    .paywall-sub { color: #888; font-size: 14px; margin-bottom: 28px; line-height: 1.6; }
+    .plan-cards { display: flex; gap: 12px; margin-bottom: 20px; }
+    .plan { flex: 1; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 18px 14px; cursor: pointer; transition: border-color 0.2s; position: relative; }
+    .plan.selected { border-color: #f97316; background: rgba(249,115,22,0.06); }
+    .plan-badge { position: absolute; top: -9px; left: 50%; transform: translateX(-50%); background: linear-gradient(90deg,#f97316,#f59e0b); color: #000; font-size: 9px; font-weight: 800; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.06em; white-space: nowrap; }
+    .plan-label { font-size: 12px; color: #888; font-weight: 600; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .plan-price { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; color: #fff; }
+    .plan-period { font-size: 12px; color: #666; }
+    .plan-hooks { font-size: 12px; color: #f97316; margin-top: 6px; font-weight: 500; }
+    .upgrade-btn { width: 100%; padding: 15px; background: linear-gradient(135deg,#f97316,#f59e0b); border: none; border-radius: 12px; color: #000; font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; margin-bottom: 12px; }
+    .skip-btn { background: none; border: none; color: #555; font-size: 13px; cursor: pointer; font-family: 'DM Sans', sans-serif; text-decoration: underline; }
+    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1a1a1a; border: 1px solid rgba(249,115,22,0.4); color: #f97316; padding: 10px 20px; border-radius: 30px; font-size: 13px; font-weight: 500; z-index: 100; animation: fadeIn 0.3s ease; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+    const FREE_LIMIT = 3;
+
+    function App() {
+      const [apiKey, setApiKey] = useState(() => localStorage.getItem('ha_key') || '');
+      const [apiInput, setApiInput] = useState('');
+      const [showSetup, setShowSetup] = useState(false);
+      const [product, setProduct] = useState('');
+      const [audience, setAudience] = useState('');
+      const [platform, setPlatform] = useState('Meta Ads');
+      const [tone, setTone] = useState('Curiosity');
+      const [hooks, setHooks] = useState([]);
+      const [loading, setLoading] = useState(false);
+      const [error, setError] = useState('');
+      const [usedCount, setUsedCount] = useState(() => parseInt(localStorage.getItem('ha_used') || '0'));
+      const [showPaywall, setShowPaywall] = useState(false);
+      const [selectedPlan, setSelectedPlan] = useState('Pro');
+      const [toast, setToast] = useState('');
+
+      useEffect(() => {
+        if (!apiKey) setShowSetup(true);
+      }, []);
+
+      const saveKey = () => {
+        if (!apiInput.trim()) return;
+        localStorage.setItem('ha_key', apiInput.trim());
+        setApiKey(apiInput.trim());
+        setShowSetup(false);
+      };
+
+      const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2000); };
+
+      const copyHook = (text) => {
+        navigator.clipboard.writeText(text).then(() => showToast('Copied!'));
+      };
+
+      const generate = async () => {
+        if (usedCount >= FREE_LIMIT) { setShowPaywall(true); return; }
+        if (!product.trim() || !audience.trim()) { setError('Please fill in product and target audience.'); return; }
+        setError(''); setLoading(true); setHooks([]);
+
+        const prompt = `You are an expert Meta Ads copywriter. Generate 5 powerful ad hooks for:
+- Product/Service: ${product}
+- Target Audience: ${audience}
+- Platform: ${platform}
+- Tone/Angle: ${tone}
+
+Rules: 1-2 sentences max each. Highly specific and emotionally charged. Avoid generic openers. Each uses a different psychological trigger.
+
+Return ONLY a JSON array of 5 strings. No explanation, no markdown. Just the array.`;
+
+        try {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+          });
+          const data = await res.json();
+          if (data.error) throw new Error(data.error.message);
+          const text = data.content?.map(i => i.text || '').join('') || '';
+          const clean = text.replace(/```json|```/g, '').trim();
+          const parsed = JSON.parse(clean);
+          setHooks(parsed);
+          const newCount = usedCount + 1;
+          setUsedCount(newCount);
+          localStorage.setItem('ha_used', newCount);
+          if (newCount >= FREE_LIMIT) setTimeout(() => setShowPaywall(true), 1200);
+        } catch (err) {
+          setError('Error: ' + (err.message || 'Something went wrong. Check your API key.'));
+        } finally { setLoading(false); }
+      };
+
+      const creditsLeft = FREE_LIMIT - usedCount;
+
+      return (
+        <div className="app">
+          <div className="bg-glow" />
+          <div className="container">
+            {/* Brand Header */}
+            <div className="brand-header">
+              <div className="brand-left">
+                <div className="brand-icon">H</div>
+                <div>
+                  <div className="brand-name">Hooks Architect</div>
+                  <div className="brand-tag">Made for Marketing</div>
+                </div>
+              </div>
+              <div className="badge"><div className="dot" />AI-Powered</div>
+            </div>
+
+            <h1>Ad <span className="grad">Hook</span><br />Generator</h1>
+            <p className="subtitle">Generate scroll-stopping first lines for your Meta, Instagram & Google ads in seconds.</p>
+
+            {/* Credits */}
+            <div className="credits-bar">
+              <span className="credits-label">Free credits remaining</span>
+              <div className="credits-dots">
+                {Array.from({ length: FREE_LIMIT }).map((_, i) => (
+                  <div key={i} className={`credit-dot ${i < usedCount ? 'used' : 'left'}`} />
+                ))}
+              </div>
+            </div>
+
+            {/* Form */}
+            <div className="form-card">
+              <div className="field">
+                <label>Product / Service</label>
+                <input type="text" placeholder="e.g. Ayurvedic weight loss supplement" value={product} onChange={e => setProduct(e.target.value)} />
+              </div>
+              <div className="field">
+                <label>Target Audience</label>
+                <input type="text" placeholder="e.g. Women 25-45 struggling with belly fat" value={audience} onChange={e => setAudience(e.target.value)} />
+              </div>
+              <div className="field">
+                <label>Platform</label>
+                <select value={platform} onChange={e => setPlatform(e.target.value)}>
+                  <option>Meta Ads</option>
+                  <option>Instagram Reels</option>
+                  <option>Google Ads</option>
+                  <option>YouTube Ads</option>
+                </select>
+              </div>
+              <div className="field">
+                <label>Hook Angle</label>
+                <select value={tone} onChange={e => setTone(e.target.value)}>
+                  <option>Curiosity</option>
+                  <option>Fear / Pain Point</option>
+                  <option>Desire / Dream Outcome</option>
+                  <option>Social Proof</option>
+                  <option>Shock / Controversy</option>
+                  <option>Urgency / Scarcity</option>
+                </select>
+              </div>
+              <button className="generate-btn" onClick={generate} disabled={loading}>
+                {loading ? 'Generating...' : usedCount >= FREE_LIMIT ? '🔒 Unlock to Generate' : '⚡ Generate Hooks'}
+              </button>
+              {error && <div className="error-msg">{error}</div>}
+            </div>
+
+            {loading && <div className="loading"><div className="spinner" />Writing your hooks...</div>}
+
+            {hooks.length > 0 && !loading && (
+              <div className="results">
+                <div className="results-header">✦ Your hooks are ready — tap to copy</div>
+                {hooks.map((hook, i) => (
+                  <div key={i} className="hook-card" onClick={() => copyHook(hook)}>
+                    <div className="hook-number">{i + 1}</div>
+                    <div className="hook-text">{hook}</div>
+                    <div className="copy-icon">⧉</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="footer">Made with ⚡ by <span>Hooks Architect</span> · Made for Marketing</div>
+          </div>
+
+          {/* API Key Setup */}
+          {showSetup && (
+            <div className="setup-overlay">
+              <div className="setup-card">
+                <div className="setup-icon">🔑</div>
+                <div className="setup-title">Enter API Key</div>
+                <p className="setup-sub">To generate hooks, enter your Google Gemini API key. It's 100% free, no credit card needed. Stored only on your device.<br /><br />
+                  <a className="setup-link" href="https://aistudio.google.com/app/apikey" target="_blank">Get your FREE API key → aistudio.google.com</a>
+                </p>
+                <div className="field">
+                  <label>Anthropic API Key</label>
+                  <input type="password" placeholder="AIza..." value={apiInput} onChange={e => setApiInput(e.target.value)} />
+                </div>
+                <button className="setup-btn" onClick={saveKey}>Start Generating Hooks ⚡</button>
+              </div>
+            </div>
+          )}
+
+          {/* Paywall */}
+          {showPaywall && (
+            <div className="paywall-overlay">
+              <div className="paywall-card">
+                <div className="paywall-icon">🔥</div>
+                <div className="paywall-title">You're on fire!</div>
+                <p className="paywall-sub">You've used your 3 free hooks. Upgrade <strong style={{color:'#f97316'}}>Hooks Architect</strong> to keep generating unlimited scroll-stopping ad hooks.</p>
+                <div className="plan-cards">
+                  {[{label:'Starter',price:'₹199',period:'/mo',hooks:'50 hooks/mo'},{label:'Pro',price:'₹399',period:'/mo',hooks:'Unlimited',badge:'POPULAR'}].map(plan => (
+                    <div key={plan.label} className={`plan ${selectedPlan === plan.label ? 'selected' : ''}`} onClick={() => setSelectedPlan(plan.label)}>
+                      {plan.badge && <div className="plan-badge">{plan.badge}</div>}
+                      <div className="plan-label">{plan.label}</div>
+                      <div className="plan-price">{plan.price}<span className="plan-period">{plan.period}</span></div>
+                      <div className="plan-hooks">{plan.hooks}</div>
+                    </div>
+                  ))}
+                </div>
+                <button className="upgrade-btn">Unlock {selectedPlan} — {selectedPlan === 'Pro' ? '₹399' : '₹199'}/mo</button>
+                <button className="skip-btn" onClick={() => setShowPaywall(false)}>Maybe later</button>
+              </div>
+            </div>
+          )}
+
+          {toast && <div className="toast">{toast}</div>}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
